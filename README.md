@@ -51,7 +51,3 @@ Frontend desarrollado en **HTML + CSS + JS + Leaflet + MarkerCluster**.
 
 ```bash
 docker-compose up --build
-
-
-
-### s
