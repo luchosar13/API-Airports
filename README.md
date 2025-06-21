@@ -51,14 +51,3 @@ Frontend desarrollado en **HTML + CSS + JS + Leaflet + MarkerCluster**.
 
 ```bash
 docker-compose up --build
-
-
-## Visualización
-
-- En esta ubicación vas a encontrar la página inicial en donde vas a poder navegar por las diferentes funcionalidades.
-
-  ```
-  localhost:8000
-  ```
-   
-
