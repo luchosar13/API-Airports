@@ -509,37 +509,76 @@
       }
     }
 
-    // Función para cargar aeropuertos en el mapa
-    async function loadAirports() {
+async function loadAirports() {
+  try {
+    markersCluster.clearLayers();
+    const res = await fetch('/airports');
+    if (!res.ok) throw new Error('Error al cargar aeropuertos');
+    const data = await res.json();
+
+    if (!data.length) {
+      alert('No se encontraron aeropuertos.');
+      return;
+    }
+
+    data.forEach((airport) => {
+      const code = (airport.iata_faa || airport.icao || '').toUpperCase();
+      if (!code || airport.lat == null || airport.lng == null) return;
+
+      const lng = airport.lng ?? 0;
+      const lat = airport.lat ?? 0;
+
+      const popupContent = `
+        <b>${airport.name || 'N/D'}</b><br>
+        ${airport.city || 'N/D'}<br>
+        <button onclick="getDetails('${code.replace(/'/g, "\\'")}')">Ver detalles</button><br><br>
+        <label style="font-size:0.9rem;">Radio (km):</label>
+        <input type="number" id="radius-${code}" value="50" min="1" max="10000" style="width:60px; margin-left:4px;"/>
+        <button onclick="getNearby(${lng}, ${lat}, '${code.replace(/'/g, "\\'")}')">Ver cercanos</button>
+      `;
+
+      const marker = L.marker([lat, lng]); // <-- agregué la definición de 'marker' aquí
+      marker.bindPopup(popupContent);
+      markersCluster.addLayer(marker);
+    });
+  } catch (err) {
+    alert('Error cargando aeropuertos: ' + err.message);
+    console.error(err);
+  }
+}
+
+    async function getNearby(lon, lat, code) {
+      const radiusInput = document.getElementById(`radius-${code}`);
+      const radius = radiusInput && radiusInput.value ? parseFloat(radiusInput.value) : 50;
+    
+      modalForm.style.display = 'none';
+      popularList.style.display = 'block';
+      modalTitle.textContent = `Cercanos a ${code} (${radius} km)`;
+      popularList.innerHTML = '';
+      messageDiv.textContent = 'Buscando...';
+      modalBackdrop.classList.add('show');
+    
       try {
-        markersCluster.clearLayers();
-        const res = await fetch('/airports');
-        if (!res.ok) throw new Error('Error al cargar aeropuertos');
+        const res = await fetch(`/airports/nearby?lon=${lon}&lat=${lat}&radius=${radius}`);
+        if (!res.ok) throw new Error('Error buscando cercanos');
         const data = await res.json();
-
+      
         if (!data.length) {
-          alert('No se encontraron aeropuertos.');
-          return;
+          popularList.innerHTML = '<li>No hay aeropuertos cercanos.</li>';
+        } else {
+          data.forEach(item => {
+            popularList.innerHTML += `<li>${item} ${item === code ? '(seleccionado)' : ''}</li>`;
+          });
         }
-
-        data.forEach((airport) => {
-          const code = (airport.iata_faa || airport.icao || '').toUpperCase();
-          if (!code || airport.lat == null || airport.lng == null) return;
-
-          const marker = L.marker([airport.lat, airport.lng]);
-          const popupContent = `
-            <b>${airport.name || 'N/D'}</b><br>
-            ${airport.city || 'N/D'}<br>
-            <button onclick="getDetails('${code}')">Ver detalles</button>
-          `;
-          marker.bindPopup(popupContent);
-          markersCluster.addLayer(marker);
-        });
-      } catch (err) {
-        alert('Error cargando aeropuertos: ' + err.message);
+        messageDiv.textContent = '';
+        } catch (err) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = 'Error al buscar cercanos.';
+        popularList.innerHTML = '';
         console.error(err);
       }
     }
+
 
     // Función para mostrar detalles de un aeropuerto en modal
     async function getDetails(code) {
