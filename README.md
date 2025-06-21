@@ -57,7 +57,7 @@ docker-compose up --build
 
 - En esta ubicación vas a encontrar la página inicial en donde vas a poder navegar por las diferentes funcionalidades.
 
-  ``` 
+  ```
   localhost:8000
   ```
    
