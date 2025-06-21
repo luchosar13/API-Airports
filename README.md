@@ -50,4 +50,4 @@ Frontend desarrollado en **HTML + CSS + JS + Leaflet + MarkerCluster**.
 ### Levantar la aplicación completa:
 
 ```bash
-docker-compose up --build
+docker compose up --build
