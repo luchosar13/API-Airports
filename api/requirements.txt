@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+motor
+redis
+pymongo
+asyncio
+jinja2

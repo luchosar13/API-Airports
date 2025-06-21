@@ -1,0 +1,43 @@
+services:
+  mongo:
+    image: mongo
+    container_name: mongo_airports
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis-geo:
+    image: redis
+    container_name: redis_geo
+    ports:
+      - "6378:6379"
+    depends_on:
+      - mongo
+
+  redis-pop:
+    image: redis
+    container_name: redis_popularity
+    ports:
+      - "6377:6379"
+
+  backend:
+    build: ./api
+    container_name: back_fastapi
+    volumes:
+      - ./api:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+      - redis-geo
+      - redis-pop
+    environment:
+      - REDIS_GEO_HOST=redis-geo
+      - REDIS_GEO_PORT=6379
+      - REDIS_POP_HOST=redis-pop
+      - REDIS_POP_PORT=6379
+      - MONGO_URI=mongodb://mongo:27017
+
+volumes:
+  mongo_data:

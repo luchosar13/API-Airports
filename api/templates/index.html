@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa de Aeropuertos</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"
+  />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 90vw;
+      max-width: 1200px;
+      margin: 20px 0;
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin: 0;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+      letter-spacing: 1.2px;
+      flex-shrink: 0;
+    }
+
+    /* Dropdown button */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown button {
+      background-color: #2980b9;
+      color: white;
+      padding: 10px 18px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+
+    .dropdown button:hover {
+      background-color: #1c5980;
+    }
+
+    /* Dropdown content */
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      z-index: 1000;
+      right: 0;
+    }
+
+    .dropdown-content button {
+      color: #2c3e50;
+      padding: 10px 15px;
+      text-align: left;
+      border: none;
+      background: none;
+      width: 100%;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s ease;
+      border-radius: 0;
+    }
+
+    .dropdown-content button:hover {
+      background-color: #f0f0f0;
+    }
+
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
+
+    /* Modal backdrop */
+    .modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    /* Modal content */
+    .modal {
+      background: white;
+      border-radius: 15px;
+      padding: 20px 30px;
+      max-width: 500px;
+      width: 90vw;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      position: relative;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      font-weight: 700;
+      color: #2980b9;
+    }
+
+    .modal form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal input, .modal select {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .modal button.submit-btn {
+      background-color: #2980b9;
+      border: none;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .modal button.submit-btn:hover {
+      background-color: #1c5980;
+    }
+
+    .modal .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #888;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .modal .close-btn:hover {
+      color: #2980b9;
+    }
+
+    #message {
+      font-weight: 600;
+      margin-top: 6px;
+      min-height: 1.2em;
+      color: red;
+    }
+
+    #map {
+      flex-grow: 1;
+      width: 90vw;
+      max-width: 1200px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      border: 2px solid #2980b9;
+      min-height: 500px;
+      margin-bottom: 30px;
+    }
+
+    /* Lista popular en modal */
+    #popularList {
+      padding-left: 20px;
+      margin: 0 0 15px 0;
+      list-style: decimal;
+      color: #2c3e50;
+      font-size: 1rem;
+    }
+
+    #popularList li {
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+      }
+      #map {
+        width: 95vw;
+        min-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mapa de Aeropuertos</h1>
+    <button id="popularBtn" style="
+      background-color:#27ae60;
+      color:white;
+      padding:10px 18px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      margin-left:15px;
+      transition: background-color 0.3s ease;">Mostrar Populares
+    </button>
+
+    <div class="dropdown" id="dropdownMenu">
+      <button id="dropdownButton">Acciones ▼</button>
+      <div class="dropdown-content">
+        <button data-action="add">Agregar</button>
+        <button data-action="update">Modificar</button>
+        <button data-action="delete">Eliminar</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+    <div class="modal" role="document">
+      <button class="close-btn" aria-label="Cerrar">&times;</button>
+      <h2 id="modalTitle"></h2>
+      <form id="modalForm">
+        <!-- Inputs o lista dinámica aquí -->
+      </form>
+      <ul id="popularList" style="display:none;"></ul>
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script>
+    // Variables globales para modal y dropdown
+    const dropdown = document.getElementById('dropdownMenu');
+    const dropdownButton = document.getElementById('dropdownButton');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalForm = document.getElementById('modalForm');
+    const popularList = document.getElementById('popularList');
+    const messageDiv = document.getElementById('message');
+    const closeBtn = modalBackdrop.querySelector('.close-btn');
+    const popularBtn = document.getElementById('popularBtn');
+
+    dropdownButton.addEventListener('click', () => {
+      dropdown.classList.toggle('show');
+    });
+
+    // Cerrar dropdown si se hace clic fuera
+    window.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target)) {
+        dropdown.classList.remove('show');
+      }
+    });
+
+    // Cerrar modal
+    closeBtn.addEventListener('click', () => {
+      closeModal();
+    });
+
+    // Cerrar modal con ESC
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalBackdrop.classList.contains('show')) {
+        closeModal();
+      }
+    });
+
+    // Abrir modal con formulario según acción
+    dropdown.querySelectorAll('.dropdown-content button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        openModal(action);
+        dropdown.classList.remove('show');
+      });
+    });
+
+    popularBtn.addEventListener('click', async () => {
+      await showPopularAirports();
+    });
+
+    function openModal(action) {
+      modalForm.style.display = 'flex';
+      popularList.style.display = 'none';
+      modalForm.innerHTML = ''; // limpiar
+      messageDiv.textContent = '';
+      modalTitle.textContent = action.charAt(0).toUpperCase() + action.slice(1) + ' aeropuerto';
+
+      if (action === 'add' || action === 'update') {
+        modalForm.innerHTML = `
+          <label for="iataCode">Código IATA/ICAO*</label>
+          <input type="text" id="iataCode" name="iataCode" maxlength="4" required />
+
+          <label for="name">Nombre${action === 'add' ? '*' : ''}</label>
+          <input type="text" id="name" name="name" ${action === 'add' ? 'required' : ''} />
+
+          <label for="city">Ciudad${action === 'add' ? '*' : ''}</label>
+          <input type="text" id="city" name="city" ${action === 'add' ? 'required' : ''} />
+
+          <label for="lat">Latitud${action === 'add' ? '*' : ''}</label>
+          <input type="number" step="any" id="lat" name="lat" ${action === 'add' ? 'required' : ''} />
+
+          <label for="lng">Longitud${action === 'add' ? '*' : ''}</label>
+          <input type="number" step="any" id="lng" name="lng" ${action === 'add' ? 'required' : ''} />
+
+          <label for="alt">Altitud${action === 'add' ? '*' : ''}</label>
+          <input type="number" id="alt" name="alt" ${action === 'add' ? 'required' : ''} />
+
+          <label for="tz">Zona horaria${action === 'add' ? '*' : ''}</label>
+          <input type="text" id="tz" name="tz" ${action === 'add' ? 'required' : ''} />
+
+          <button type="submit" class="submit-btn">${action === 'add' ? 'Agregar' : 'Modificar'}</button>
+        `;
+      } else if (action === 'delete') {
+        modalForm.innerHTML = `
+          <label for="iataCode">Código IATA/ICAO*</label>
+          <input type="text" id="iataCode" name="iataCode" maxlength="4" required />
+          <button type="submit" class="submit-btn">Eliminar</button>
+        `;
+      }
+
+      modalBackdrop.classList.add('show');
+
+      // Focus primer input
+      setTimeout(() => {
+        const firstInput = modalForm.querySelector('input');
+        if (firstInput) firstInput.focus();
+      }, 100);
+
+      // Añadir listener submit
+      modalForm.onsubmit = async (e) => {
+        e.preventDefault();
+        await handleSubmit(action);
+      };
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove('show');
+      modalForm.style.display = 'flex';
+      popularList.style.display = 'none';
+      modalForm.innerHTML = '';
+      messageDiv.textContent = '';
+    }
+
+    async function handleSubmit(action) {
+      messageDiv.style.color = 'black';
+      messageDiv.textContent = 'Procesando...';
+
+      const formData = new FormData(modalForm);
+      const iataCode = formData.get('iataCode').trim().toUpperCase();
+
+      try {
+        let response;
+
+        if (action === 'add') {
+          const name = formData.get('name').trim();
+          const city = formData.get('city').trim();
+          const lat = formData.get('lat').trim();
+          const lng = formData.get('lng').trim();
+          const alt = formData.get('alt').trim();
+          const tz = formData.get('tz').trim();
+
+          if (!iataCode || !name || !city || !lat || !lng || !alt || !tz) {
+            messageDiv.style.color = 'red';
+            messageDiv.textContent = 'Por favor completa todos los campos obligatorios.';
+            return;
+          }
+
+          const data = {
+            name, city, iata_faa: iataCode, lat: parseFloat(lat),
+            lng: parseFloat(lng), alt: parseInt(alt), tz
+          };
+
+          response = await fetch('/airports', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+          });
+        } else if (action === 'update') {
+          const updateData = {};
+          const name = formData.get('name').trim();
+          const city = formData.get('city').trim();
+          const lat = formData.get('lat').trim();
+          const lng = formData.get('lng').trim();
+          const alt = formData.get('alt').trim();
+          const tz = formData.get('tz').trim();
+
+          if (name) updateData.name = name;
+          if (city) updateData.city = city;
+          if (lat) updateData.lat = parseFloat(lat);
+          if (lng) updateData.lng = parseFloat(lng);
+          if (alt) updateData.alt = parseInt(alt);
+          if (tz) updateData.tz = tz;
+
+          if (!iataCode) {
+            messageDiv.style.color = 'red';
+            messageDiv.textContent = 'Código IATA/ICAO es obligatorio para modificar.';
+            return;
+          }
+          if (Object.keys(updateData).length === 0) {
+            messageDiv.style.color = 'red';
+            messageDiv.textContent = 'Ingresa al menos un campo para modificar.';
+            return;
+          }
+
+          response = await fetch('/airports/' + iataCode, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updateData)
+          });
+        } else if (action === 'delete') {
+          if (!iataCode) {
+            messageDiv.style.color = 'red';
+            messageDiv.textContent = 'Código IATA/ICAO es obligatorio para eliminar.';
+            return;
+          }
+
+          response = await fetch('/airports/' + iataCode, {
+            method: 'DELETE'
+          });
+        }
+
+        if (response.ok) {
+          const resData = await response.json();
+          messageDiv.style.color = 'green';
+          messageDiv.textContent = resData.message || 'Operación exitosa.';
+          await loadAirports();
+          setTimeout(() => {
+            closeModal();
+          }, 1500);
+        } else {
+          const errorData = await response.json();
+          messageDiv.style.color = 'red';
+          messageDiv.textContent = errorData.detail || 'Error en la operación.';
+        }
+      } catch (err) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = 'Error en la comunicación con el servidor.';
+        console.error(err);
+      }
+    }
+
+    // Mostrar aeropuertos populares en modal
+    async function showPopularAirports() {
+      modalForm.style.display = 'none';
+      popularList.style.display = 'block';
+      modalTitle.textContent = 'Aeropuertos Más Populares';
+      messageDiv.textContent = 'Cargando...';
+      modalBackdrop.classList.add('show');
+
+      try {
+        const res = await fetch('/airports/popular');
+        if (!res.ok) throw new Error('Error cargando populares');
+        const data = await res.json();
+        popularList.innerHTML = '';
+
+        if (!data.length) {
+          popularList.innerHTML = '<li>No hay datos populares disponibles.</li>';
+        } else {
+          data.forEach((airport, i) => {
+            popularList.innerHTML += `<li><b>${airport.name}</b> (${airport.iata_faa || airport.icao})</li>`;
+          });
+        }
+        messageDiv.textContent = '';
+      } catch (err) {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = 'Error al cargar aeropuertos populares.';
+        popularList.innerHTML = '';
+        console.error(err);
+      }
+    }
+
+    // Función para cargar aeropuertos en el mapa
+    async function loadAirports() {
+      try {
+        markersCluster.clearLayers();
+        const res = await fetch('/airports');
+        if (!res.ok) throw new Error('Error al cargar aeropuertos');
+        const data = await res.json();
+
+        if (!data.length) {
+          alert('No se encontraron aeropuertos.');
+          return;
+        }
+
+        data.forEach((airport) => {
+          const code = (airport.iata_faa || airport.icao || '').toUpperCase();
+          if (!code || airport.lat == null || airport.lng == null) return;
+
+          const marker = L.marker([airport.lat, airport.lng]);
+          const popupContent = `
+            <b>${airport.name || 'N/D'}</b><br>
+            ${airport.city || 'N/D'}<br>
+            <button onclick="getDetails('${code}')">Ver detalles</button>
+          `;
+          marker.bindPopup(popupContent);
+          markersCluster.addLayer(marker);
+        });
+      } catch (err) {
+        alert('Error cargando aeropuertos: ' + err.message);
+        console.error(err);
+      }
+    }
+
+    // Función para mostrar detalles de un aeropuerto en modal
+    async function getDetails(code) {
+      try {
+        const res = await fetch(`/airports/${code}`);
+        if (!res.ok) throw new Error('Aeropuerto no encontrado');
+        const data = await res.json();
+
+        modalForm.style.display = 'none';
+        popularList.style.display = 'none';
+        modalTitle.textContent = 'Detalles del Aeropuerto';
+        messageDiv.textContent = '';
+        modalBackdrop.classList.add('show');
+
+        modalForm.innerHTML = `
+          <p><b>Nombre:</b> ${data.name || 'N/D'}</p>
+          <p><b>Ciudad:</b> ${data.city || 'N/D'}</p>
+          <p><b>Código IATA/FAA:</b> ${data.iata_faa || 'N/D'}</p>
+          <p><b>Código ICAO:</b> ${data.icao || 'N/D'}</p>
+          <p><b>Latitud:</b> ${data.lat ?? 'N/D'}</p>
+          <p><b>Longitud:</b> ${data.lng ?? 'N/D'}</p>
+          <p><b>Altitud:</b> ${data.alt ?? 'N/D'}</p>
+          <p><b>Zona horaria:</b> ${data.tz || 'N/D'}</p>
+          <button class="submit-btn" id="closeDetailsBtn">Cerrar</button>
+        `;
+
+        const closeDetailsBtn = document.getElementById('closeDetailsBtn');
+        closeDetailsBtn.onclick = () => closeModal();
+
+        modalForm.style.display = 'block';
+      } catch (err) {
+        alert('Error al obtener detalles: ' + err.message);
+        console.error(err);
+      }
+    }
+
+    // Inicializar mapa y marcadores
+    const map = L.map('map').setView([-34.6, -58.4], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    const markersCluster = L.markerClusterGroup();
+    map.addLayer(markersCluster);
+
+    // Carga inicial de aeropuertos
+    loadAirports();
+  </script>
+</body>
+</html>
